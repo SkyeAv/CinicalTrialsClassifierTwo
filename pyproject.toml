@@ -1,0 +1,16 @@
+# author --> Skye Lane Goetz
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CTClassifier2"
+version = "2.0.0"
+requires-python = ">=3.13"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+CTC2 = "cli:main"
