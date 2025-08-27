@@ -1,6 +1,10 @@
 {
   description = "CTClassifier2";
-  inputs = import ./nix/imports.nix;
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/25.05";
+    systems.url = "github:nix-systems/default";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+  };
   outputs = inputs @ {
     self,
     systems,
