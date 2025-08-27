@@ -1,5 +1,5 @@
 {
-  description = "CTClassifier";
+  description = "CTClassifier2";
   inputs = import ./nix/imports.nix;
   outputs = inputs @ {
     self,
