@@ -48,6 +48,7 @@
           duckdb
           polars
           fsspec
+          typer
           torch
           numpy
         ];

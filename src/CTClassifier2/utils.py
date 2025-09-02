@@ -10,7 +10,7 @@ import numpy as np
 import random
 import torch
 
-@cache(maxsize=1)
+@cache
 def root(utils_p: Path = Path(__file__), build: str = "pyproject.toml") -> Path:
   for p in [utils_p] + list(utils_p.parents):
     if (p / build).exists():

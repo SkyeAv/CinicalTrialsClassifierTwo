@@ -3,7 +3,7 @@ from __future__ import annotations
 from CTClassifier2.utils import root
 from pathlib import Path
 from typing import Any
-import polas as pl
+import polars as pl
 import fsspec
 
 def _tablename_cols(df: pl.DataFrame, tablename: str) -> pl.DataFrame:
