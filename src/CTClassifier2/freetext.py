@@ -75,7 +75,7 @@ def _arrow_init(
   batch_len_rows: int
 ) -> tuple[Any, Any, Any]:
   dataset = ds.dataset(parquet, format="parquet")
-  scanner = dataset.scan(columns=cols_combined, batch_size=batch_len_rows)
+  scanner = dataset.scanner(columns=cols_combined, batch_size=batch_len_rows)
   schema = pa.schema([pa.field("row_id", pa.int64())] + [pa.field(f"{col}::embed", pa.list_(pa.float32(), list_size=ae_out_size)) if col in cols else pa.field(f"{col}::embed_complex", pa.list_(pa.float32(), list_size=ae_out_size_complex)) for col in cols_complex])
   writer = pq.ParquetWriter(parquet_embed, schema=schema, compression="zstd", use_dictionary=False)
   return scanner, writer, schema
