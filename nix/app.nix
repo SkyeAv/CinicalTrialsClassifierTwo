@@ -6,15 +6,11 @@
     , ...
     }:
     let
-
       moduleName = "CTClassifier2";
       seed = "87";
-
       pkgs = import inputs.nixpkgs { inherit system; };
       lib = pkgs.lib;
-
       py = pkgs.python313Packages;
-
       BioBert = pkgs.callPackage ./biobert.nix { };
       PyTorchFrame = py.buildPythonPackage rec {
         pname = "pytorch-frame";
@@ -25,10 +21,9 @@
           sha256 = lib.fakeSha256;
         };
       };
-
     in
     {
-
+      defaultPackage = config.packages.app;
       packages.app = py.buildPythonApplication {
         pname = "${moduleName}";
         version = "2.0.0";
@@ -66,6 +61,5 @@
           "${moduleName}"
         ];
       };
-
     };
 }
