@@ -5,19 +5,21 @@
     systems.url = "github:nix-systems/default";
     flake-parts.url = "github:hercules-ci/flake-parts";
   };
-  outputs = inputs @ {
-    self,
-    systems,
-    nixpkgs,
-    flake-parts,
-    ...
-  }:
-    flake-parts.lib.mkFlake {
-      inherit inputs;
-    } {
-      systems = import inputs.systems;
-      imports = [
-        ./nix/app.nix
-      ];
-    };
+  outputs =
+    inputs @ { self
+    , systems
+    , nixpkgs
+    , flake-parts
+    , ...
+    }:
+    flake-parts.lib.mkFlake
+      {
+        inherit inputs;
+      }
+      {
+        systems = import inputs.systems;
+        imports = [
+          ./nix/app.nix
+        ];
+      };
 }

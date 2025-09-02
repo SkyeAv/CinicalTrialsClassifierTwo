@@ -1,7 +1,7 @@
-{
-  stdenvNoCC,
-  fetchurl,
-  lib,
+{ stdenvNoCC
+, fetchurl
+, lib
+,
 }:
 let
   srcs = [
@@ -26,7 +26,7 @@ let
       sha256 = lib.fakeSha256;
     })
   ];
-in 
+in
 stdenvNoCC.mkDerivation {
   pname = "BioBert";
   version = "main";
