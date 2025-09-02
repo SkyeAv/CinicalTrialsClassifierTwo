@@ -1,8 +1,8 @@
 from __future__ import annotations
 # ! annotations MUST BE AT THE TOP
+from CTClassifier2.utils import root
 from pathlib import Path
 from typing import Any
-from utils import root
 import polas as pl
 import fsspec
 

@@ -1,10 +1,8 @@
 from __future__ import annotations
 # ! annotations MUST BE AT THE TOP
-from datalake import generate_parquet
-from freetext import embed_parquet
-from models import snapshot
-from utils import load_yaml
-from pathlib import Path
+from CTClassifier2.datalake import generate_parquet
+from CTClassifier2.freetext import embed_parquet
+from CTClassifier2.utils import load_yaml
 from typing import Any
 import typer
 
