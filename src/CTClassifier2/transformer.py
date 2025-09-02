@@ -555,7 +555,7 @@ def fit_model(snapshot: dict[str, Any]) -> None:
   set_seed()
   dtype, device = dtype_device()
   version: int = snapshot["version"]
-  parquet_p: Path = root() / "PARQUET" / version
+  parquet_p: Path = root() / "PARQUET" / str(version)
   ff: pd.DataFrame = _load_features(parquet_p)
   lf: pd.DataFrame = _label_frame(snapshot["gold_labels"], snapshot["pseudo_lables"])
   df: pd.DataFrame = _label_features(ff, lf)

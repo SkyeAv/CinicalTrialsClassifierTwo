@@ -176,7 +176,7 @@ def _embed_texts(
   ae_idx: dict[str, tuple[Path, int, int]] = {}
   try:
     for col in cols_combined:
-      model_p: Path = root() / "AUTOENCODER" / version / col / "MODEL.pt"
+      model_p: Path = root() / "AUTOENCODER" / str(version) / col / "MODEL.pt"
       model_p.parent.mkdir(parents=True, exist_ok=True)
       is_complex: bool = col in cols_complex
       L: int = ae_out_size_complex if is_complex else ae_out_size
@@ -194,7 +194,7 @@ def _embed_texts(
         model_p
       )
       # ! use memmaps so RAM doesn't explode
-      mm_p: Path = mm_d / version / col / "ENCODED.mm"
+      mm_p: Path = mm_d / str(version) / col / "ENCODED.mm"
       mm_p.parent.mkdir(parents=True, exist_ok=True)
       np.memmap(mm_p, mode="w+", dtype=np.float32, shape=(bert_out_size, L))[:] = z.numpy()
       ae_idx[col] = (mm_p, bert_out_size, L)
@@ -205,7 +205,7 @@ def _embed_texts(
 
 def embed_parquet(snapshot: dict[str, Any]) -> None:
   version: int = snapshot["version"]
-  parquet_p: Path = root() / "PARQUET" / version
+  parquet_p: Path = root() / "PARQUET" / str(version)
   parquet: str = (parquet_p / "RAW.parquet").as_posix()
   cols, cols_complex = _freetext_columns(parquet)
   model, tokenizer = _biobert()

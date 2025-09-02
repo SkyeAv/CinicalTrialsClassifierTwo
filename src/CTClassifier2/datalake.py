@@ -15,7 +15,7 @@ def _read_table(zips: str, tablename: str) -> pl.DataFrame:
 
 def generate_parquet(snapshot: dict[str, Any], nct_col: bool = False) -> None:
   version: int = snapshot["version"]
-  zips: str = (snapshot["zip_directory"] / version).as_posix()
+  zips: str = (snapshot["zip_directory"] / str(version)).as_posix()
   dfs: list[pl.DataFrame] = []
   parquet_p: Path = root() / "PARQUET" / f"{version}.parquet"
   parquet_p.mkdir(parents=True, exist_ok=True)

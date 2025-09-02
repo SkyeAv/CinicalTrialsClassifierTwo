@@ -14,7 +14,7 @@ class _SnapshotModel(BaseModel):
   pseudo_lables: Path = Field(...)
   save_to: Path = Field(...)
 
-def snapshot(parsed: Any) -> dict[str, Any]:
+def get_snapshot(parsed: Any) -> dict[str, Any]:
   try:
     return _SnapshotModel.model_validate(parsed).model_dump()
   except ValidationError as e:
