@@ -1,31 +1,37 @@
 {
   inputs,
-  self,
   ...
 }: {
   perSystem = {
     system,
-    lib,
     ...
   }: let
-    pkgs = nixpkgs;
+
     moduleName = "CTClassifier2";
     seed = "87";
-  in {
+
+    pkgs = import inputs.nixpkgs {inherit system;};
+    lib = pkgs.lib;
+
     py = pkgs.python313Packages;
-    BioBert = pkgs.callPackage ./nix/biobert.nix {};
-    PyTorchFrame = py.buildPythonWheel rec {
+
+    BioBert = pkgs.callPackage ./biobert.nix {};
+    PyTorchFrame = py.buildPythonPackage rec {
       pname = "pytorch-frame";
       version = "0.2.5";
-      src = fetchurl {
+      format = "wheel";
+      src = pkgs.fetchurl {
         url = "https://files.pythonhosted.org/packages/2a/da/75804267b2bd9839bc44ba60cadde60bdcb50261a8cf448d54a81ce04334/pytorch_frame-0.2.5-py3-none-any.whl";
         sha256 = lib.fakeSha256;
       };
     };
-    Module = buildPythonApplication {
+
+  in {
+
+    packages.app = py.buildPythonApplication {
       pname = "${moduleName}";
       version = "2.0.0";
-      src = ./.;
+      src = ../.;
       pyproject = true;
       build-system = with py; [
         setuptools
@@ -59,6 +65,6 @@
         "${moduleName}"
       ];
     };
-    default = self.packages.${system}.Module;
+
   };
 }

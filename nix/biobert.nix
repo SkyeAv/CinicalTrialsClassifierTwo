@@ -3,9 +3,7 @@
   fetchurl,
   lib,
 }:
-stdenvNoCC.mkDerivation {
-  pname = "BioBert";
-  version = "main";
+let
   srcs = [
     (fetchurl {
       url = "https://huggingface.co/dmis-lab/biobert-v1.1/resolve/main/config.json";
@@ -28,6 +26,10 @@ stdenvNoCC.mkDerivation {
       sha256 = lib.fakeSha256;
     })
   ];
+in 
+stdenvNoCC.mkDerivation {
+  pname = "BioBert";
+  version = "main";
   dontUnpack = true;
   installPhase = ''
     runHook preInstall
