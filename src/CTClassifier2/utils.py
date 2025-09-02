@@ -11,12 +11,8 @@ import random
 import torch
 
 @cache
-def root(utils_p: Path = Path(__file__), build: str = "pyproject.toml") -> Path:
-  for p in [utils_p] + list(utils_p.parents):
-    if (p / build).exists():
-      return p.resolve() / "CACHE"
-  utils: str = utils_p.as_posix()
-  raise FileNotFoundError(f"PY-CODE:1 | Couldn't Locate Root... {utils}")
+def root(cwd: Path = Path.cwd()) -> Path:
+  return cwd.resolve() / "CACHE"
 
 yaml = YAML()
 
