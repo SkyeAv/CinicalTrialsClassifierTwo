@@ -43,6 +43,7 @@ DESCRIBE SELECT * FROM _t
 """
     schema: pd.DataFrame = con.execute(schema_query).fetchdf()
     str_cols: list[str] = schema.loc[schema["column_type"] == "VARCHAR", "column_name"].tolist()
+    str_cols.remove("nct")
     cols: list[str] = [col for col in str_cols if high_varation > _count_unique(con, col) >= enough_variation]
     cols_complex: list[str] = [col for col in str_cols if _count_unique(con, col) >= high_varation]
     return cols, cols_complex
