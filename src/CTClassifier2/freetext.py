@@ -163,6 +163,8 @@ def _embed_texts(
     cols,
     cols_complex,
     cols_combined,
+    ae_out_size,
+    ae_out_size_complex,
     batch_len_rows
   )
   bert_out_size: int = model.config.hidden_size
