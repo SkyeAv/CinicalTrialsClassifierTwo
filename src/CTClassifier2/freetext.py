@@ -101,7 +101,7 @@ def _batched_pooler_out(
     ).to(device)
     outputs = model(**inputs)
     pooler_out = getattr(outputs, "pooler_output", None)
-    if pooler_out is not None:
+    if pooler_out is None:
       raise RuntimeError(f"PY-CODE:7 | BioBert Failed To Produce a Pooler Out... {batch}")
     embeddings.append(pooler_out.detach().cpu().float())
   return torch.cat(embeddings, dim=0)
