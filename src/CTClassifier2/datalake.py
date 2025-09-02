@@ -10,7 +10,7 @@ def _tablename_cols(df: pl.DataFrame, tablename: str) -> pl.DataFrame:
   return df.rename({col: f"{tablename}::{col}" for col in df.columns})
 
 def _read_table(zips: str, tablename: str) -> pl.DataFrame:
-  with fsspec.open(f"zip://{tablename}.txt.xz::{zips}", mode="rt") as f:
+  with fsspec.open(f"zip://{tablename}.txt::{zips}", mode="rt") as f:
     return _tablename_cols(pl.read_csv(f, has_header=True, separator="|"), tablename)
 
 def generate_parquet(snapshot: dict[str, Any], nct_col: bool = False) -> None:

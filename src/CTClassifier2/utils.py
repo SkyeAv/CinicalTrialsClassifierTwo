@@ -20,17 +20,17 @@ def root(utils_p: Path = Path(__file__), build: str = "pyproject.toml") -> Path:
 
 yaml = YAML()
 
-def load_yaml(yaml: str) -> Any:
+def load_yaml(config: str) -> Any:
     try:
-        with open(yaml, "r") as f:
+        with open(config, "r") as f:
             return yaml.load(f)
     except FileNotFoundError:
-        raise RuntimeError(f"PY-CODE:2 | File not found... {yaml}")
+        raise RuntimeError(f"PY-CODE:2 | File not found... {config}")
     except PermissionError:
-        raise RuntimeError(f"PY-CODE:3 | Permission denied.. {yaml}")
+        raise RuntimeError(f"PY-CODE:3 | Permission denied.. {config}")
     except YAMLError as e:
         err: str = str(e)
-        raise RuntimeError(f"PY-CODE:4 | YAML parsing error... {yaml}... {err}")
+        raise RuntimeError(f"PY-CODE:4 | YAML parsing error... {config}... {err}")
     
 def set_seed(x: int = int(environ["PYTHONHASHSEED"])) -> None:
   torch.use_deterministic_algorithms(True, warn_only=True)
