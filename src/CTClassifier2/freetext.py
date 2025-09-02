@@ -156,7 +156,7 @@ def _embed_texts(
 ) -> None:
   set_seed()
   dtype, device = dtype_device()
-  cols_combined: list[str] = cols, cols_complex
+  cols_combined: list[str] = cols + cols_complex
   scanner, writer, schema = _arrow_init(
     parquet,
     parquet_embed,
