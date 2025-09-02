@@ -45,9 +45,9 @@ WITH base AS (
   SELECT * EXCLUDE({exclude_clause})
   FROM parquet_scan("{parquet}")
 )
-SELECT a.*, b.* EXCLUDE("nct_id", "row_id")
+SELECT a.*, b.* EXCLUDE("nct", "row_id")
 FROM base a
-LEFT JOIN parquet_scan("{parquet_embed}") b USING ("nct_id", "row_id")
+LEFT JOIN parquet_scan("{parquet_embed}") b USING ("row_id")
 """
     return con.execute(load_query).fetchdf()
 
