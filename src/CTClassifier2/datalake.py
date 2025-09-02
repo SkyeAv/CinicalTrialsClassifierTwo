@@ -17,7 +17,7 @@ def generate_parquet(snapshot: dict[str, Any], nct_col: bool = False) -> None:
   version: int = snapshot["version"]
   zips: str = (snapshot["zip_directory"] / f"{version}.zip").as_posix()
   dfs: list[pl.DataFrame] = []
-  parquet_p: Path = root() / "PARQUET" / f"{version}.parquet"
+  parquet_p: Path = root() / "PARQUET" / str(version) / "RAW.parquet"
   parquet_p.parent.mkdir(parents=True, exist_ok=True)
   if not parquet_p.exists():
     for tablename in snapshot["tables"]:
