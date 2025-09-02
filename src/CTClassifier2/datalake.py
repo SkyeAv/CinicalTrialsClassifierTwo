@@ -27,7 +27,7 @@ def generate_parquet(snapshot: dict[str, Any], nct_col: bool = False) -> None:
         nct_col = True
       else:
         df = df.drop(f"{tablename}::nct_id")
-      dfs.append()
+      dfs.append(df)
     combined = pl.concat(dfs, how="horizontal")
     combined = combined.with_row_index("row_id")  # ! added index for joining
     combined.write_parquet(parquet_p)
