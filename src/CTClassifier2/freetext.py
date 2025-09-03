@@ -153,7 +153,8 @@ def _embed_texts(
   ae_out_size: int = 64,
   ae_out_size_complex: int = 256,
   max_len: int = 256,
-  batch_len_rows: int = 16_384
+  batch_len_rows: int = 16_384,
+  bert_out_size: int = 768
 ) -> None:
   set_seed()
   dtype, device = dtype_device()
@@ -168,7 +169,6 @@ def _embed_texts(
     ae_out_size_complex,
     batch_len_rows
   )
-  bert_out_size: int = model.config.hidden_size
   ae = partial(
     encoder,
     bert_out_size=bert_out_size,
