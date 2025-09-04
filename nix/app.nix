@@ -43,6 +43,7 @@
           pydantic
           pyarrow
           BioBert
+          joblib
           loguru
           pandas
           duckdb

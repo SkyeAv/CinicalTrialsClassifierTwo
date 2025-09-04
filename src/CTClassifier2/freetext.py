@@ -18,6 +18,7 @@ import pyarrow as pa
 import pandas as pd
 import numpy as np
 import tempfile
+import joblib
 import duckdb
 import shutil
 import torch
@@ -87,7 +88,7 @@ def _batched_pooler_out(
   model: Any,
   tokenizer: Any,
   max_len: int,
-  batch_size: int = 64
+  batch_size: int = 128
 ) -> torch.Tensor:
   embeddings: list[torch.Tensor] = []
   device: torch.device = next(model.parameters()).device
@@ -100,7 +101,7 @@ def _batched_pooler_out(
       truncation=True,
       max_length=max_len
     ).to(device)
-    outputs = model(**inputs)
+    outputs = model(**inputs, output_hidden_states=False, output_attentions=False)
     pooler_out = getattr(outputs, "pooler_output", None)
     if pooler_out is None:
       raise RuntimeError(f"PY-CODE:7 | BioBert Failed To Produce a Pooler Out... {batch}")
@@ -113,13 +114,20 @@ def _embedding_matrix(
   tokenizer: Any,
   col: str,
   max_len: int,
+  model_p: Path
 ) -> torch.Tensor:
-  embdedded_columns: list[torch.Tensor] = []
-  for batch in scanner.to_batches():
-    vals = batch.column(col).to_pylist()
-    embeddings: torch.Tensor = _batched_pooler_out(vals, model, tokenizer, max_len)
-    embdedded_columns.append(embeddings)
-  return torch.cat(embdedded_columns, dim=0)
+  cache_p: Path = model_p.parent / "POOLER_OUT.pkl"
+  if not cache_p.exists():
+    embdedded_columns: list[torch.Tensor] = []
+    for batch in scanner.to_batches():
+      vals = batch.column(col).to_pylist()
+      embeddings: torch.Tensor = _batched_pooler_out(vals, model, tokenizer, max_len)
+      embdedded_columns.append(embeddings)
+    pooler_matrix = torch.cat(embdedded_columns, dim=0)
+    joblib.dump(pooler_matrix, cache_p)
+    return pooler_matrix
+  else:
+    return joblib.load(cache_p)
 
 def _write_embeddings(
   writer: Any,
@@ -190,11 +198,12 @@ def _embed_texts(
         model,
         tokenizer,
         col,
-        max_len
+        max_len,
+        model_p
       )
       z: torch.Tensor = dr(
-        biobert_embedding,
-        model_p
+        pooler_out=biobert_embedding,
+        model_p=model_p
       )
       # ! use memmaps so RAM doesn't explode
       mm_p: Path = mm_d / str(version) / col / "ENCODED.mm"

@@ -348,8 +348,8 @@ def encoder(
       model_p,
       device,
       dtype,
-      False,
       complex_embed,
+      False,
       num_workers,
       pin_memory,
       drop_last
