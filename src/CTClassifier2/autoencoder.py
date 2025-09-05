@@ -63,9 +63,9 @@ class _AutoEncoder(nn.Module):
       complex_embed=complex_embed,
       activation_fn=activation_fn,
       dropout=dropout
-    ) 
-    self.encoder = _ae_sequential(reversed(hidden))
-    self.decoder = _ae_sequential(hidden)
+    )
+    self.encoder = _ae_sequential(hidden)
+    self.decoder = _ae_sequential(list(reversed(hidden)))
     return None
   
   def _encode(self: Self, x: torch.Tensor) -> torch.Tensor:
@@ -173,7 +173,6 @@ def _train_epoch(
   n: int = 0
 
   for (x,) in loader:
-    print(type(x))
     opt.zero_grad(set_to_none=True)
     if device.type != "cuda":
       x = x.to(device, dtype=dtype, non_blocking=True)
@@ -279,7 +278,7 @@ def _training_loop(
     checkpoint: str = model_p.as_posix()
     raise FileNotFoundError(f"PY-CODE:6 | Autoencoder Checkpoint Not Found... {checkpoint}")
   
-  test_loss = _eval_epoch(ae, test_loader, opt, device, dtype)
+  test_loss = _eval_epoch(ae, test_loader, device, dtype)
   logger.info(f"LOG-CODE:2 | TestLoss:{test_loss}")
   return None
 
@@ -369,5 +368,11 @@ def encoder(
     if not model_p.exists():
       model: str = model_p.as_posix()
       raise FileNotFoundError(f"PY-CODE:6 | Autoencoder Weights Not Found... {model}")
-    ae = torch.load(model_p, map_location=device).eval()
+    ae = _AutoEncoder(
+      bert_out_size,
+      ae_out_size,
+      complex_embed
+    ).to(device)
+    ae.load_state_dict(torch.load(model_p, map_location=device))
+    ae.eval()
     return _tranform_tensor(ae, prod_loader, device, dtype)
