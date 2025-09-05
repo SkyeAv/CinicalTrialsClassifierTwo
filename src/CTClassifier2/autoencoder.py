@@ -325,6 +325,7 @@ def encoder(
       persistent_workers,
       prefetch_factor
     )
+    print(type(train_loader), (type(val_loader)), type(test_loader))
     ae = _AutoEncoder(
       bert_out_size,
       ae_out_size,
