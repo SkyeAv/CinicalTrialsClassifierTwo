@@ -172,7 +172,8 @@ def _train_epoch(
   total: float = 0.0
   n: int = 0
 
-  for x in loader:
+  for (x,) in loader:
+    print(type(x))
     opt.zero_grad(set_to_none=True)
     if device.type != "cuda":
       x = x.to(device, dtype=dtype, non_blocking=True)
@@ -206,7 +207,7 @@ def _eval_epoch(
   total: float = 0.0
   n: int = 0
 
-  for x in loader:
+  for (x,) in loader:
     if device.type != "cuda":
       x = x.to(device, dtype=dtype, non_blocking=True)
       x_hat, _ = ae(x)
@@ -290,11 +291,11 @@ def _tranform_tensor(
   dtype: Any,
 ) -> torch.Tensor:
   embed: list[torch.Tensor] = []
-  for x in loader:
+  for (x,) in loader:
     if device.type != "cuda":
-      x = x.to(device, dtype=dtype, non_blocking=True)
+      x = x.to(device, dtype=dtype)
     else:
-      x = x.to(device, non_blocking=True)
+      x = x.to(device)
       with autocast(dtype=dtype):
         z = ae._encode(x)
     embed.append(z.cpu())
@@ -325,7 +326,6 @@ def encoder(
       persistent_workers,
       prefetch_factor
     )
-    print(type(train_loader), (type(val_loader)), type(test_loader))
     ae = _AutoEncoder(
       bert_out_size,
       ae_out_size,
