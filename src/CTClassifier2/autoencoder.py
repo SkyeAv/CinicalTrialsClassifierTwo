@@ -39,7 +39,8 @@ def _dynamic_sequential(
     else:
       layers += [nn.Linear(prev, h), activation_fn]
       prev = h
-
+  
+  print(hidden)
   return nn.Sequential(*layers)
 
 class _AutoEncoder(nn.Module):
