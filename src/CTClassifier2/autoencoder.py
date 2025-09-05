@@ -293,11 +293,12 @@ def _tranform_tensor(
   for (x,) in loader:
     if device.type != "cuda":
       x = x.to(device, dtype=dtype)
+      z = ae._encode(x)
     else:
       x = x.to(device)
       with autocast(dtype=dtype):
         z = ae._encode(x)
-      embed.append(z.cpu())
+    embed.append(z.cpu())
   return torch.cat(embed)
 
 def encoder(
