@@ -39,8 +39,7 @@ def _dynamic_sequential(
     else:
       layers += [nn.Linear(prev, h), activation_fn]
       prev = h
-  
-  print(hidden)
+
   return nn.Sequential(*layers)
 
 class _AutoEncoder(nn.Module):
@@ -131,7 +130,7 @@ def _training_loaders(
   return train_loader, val_loader, test_loader
 
 def _ae_loss(x_hat: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
-  mse: torch.Tensor = F.mse(x_hat, x)
+  mse: torch.Tensor = F.mse_loss(x_hat, x, reduction="mean")
   cos: torch.Tensor = 1 - F.cosine_similarity(x_hat, x, dim=-1).mean()
   return mse + 0.1 * cos
 
