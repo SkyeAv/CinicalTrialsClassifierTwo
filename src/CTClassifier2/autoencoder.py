@@ -316,7 +316,7 @@ def encoder(
   prefetch_factor: int = 2,
 ) -> torch.Tensor:
   dataset = TensorDataset(pooler_out)
-  if training:
+  if training and not model_p.exists():
     train_loader, val_loader, test_loader = _training_loaders(
       dataset,
       num_workers,
