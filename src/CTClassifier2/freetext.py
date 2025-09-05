@@ -206,11 +206,12 @@ def _embed_texts(
         ae_out_size=L,
         model_p=model_p
       )
+      n_rows, out_dim = z.shape
       # ! use memmaps so RAM doesn't explode
       mm_p: Path = mm_d / str(version) / col / "ENCODED.mm"
       mm_p.parent.mkdir(parents=True, exist_ok=True)
-      np.memmap(mm_p, mode="w+", dtype=np.float32, shape=(bert_out_size, L))[:] = z.numpy()
-      ae_idx[col] = (mm_p, bert_out_size, L)
+      np.memmap(mm_p, mode="w+", dtype=np.float32, shape=(n_rows, out_dim))[:] = z.numpy()
+      ae_idx[col] = (mm_p, n_rows, out_dim)
     _write_embeddings(writer, schema, bert_out_size, ae_idx, batch_len_rows)
   finally:
     shutil.rmtree(mm_d, ignore_errors=True)
