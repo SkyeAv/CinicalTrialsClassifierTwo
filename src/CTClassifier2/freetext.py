@@ -203,6 +203,7 @@ def _embed_texts(
       )
       z: torch.Tensor = dr(
         pooler_out=biobert_embedding,
+        ae_out_size=L,
         model_p=model_p
       )
       # ! use memmaps so RAM doesn't explode
