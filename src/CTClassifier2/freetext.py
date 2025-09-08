@@ -44,7 +44,8 @@ DESCRIBE SELECT * FROM _t
 """
     schema: pd.DataFrame = con.execute(schema_query).fetchdf()
     str_cols: list[str] = schema.loc[schema["column_type"] == "VARCHAR", "column_name"].tolist()
-    str_cols.remove("nct")
+    if "nct" in str_cols:
+      str_cols.remove("nct")
     cols: list[str] = [col for col in str_cols if high_varation > _count_unique(con, col) >= enough_variation]
     cols_complex: list[str] = [col for col in str_cols if _count_unique(con, col) >= high_varation]
     return cols, cols_complex
@@ -67,17 +68,13 @@ def _biobert() -> tuple[Any, Any]:
   return model, tokenizer
 
 def _arrow_init(
-  parquet: str,
   parquet_embed: str,
   cols: list[str],
   cols_complex: list[str],
   cols_combined: list[str],
   ae_out_size: int,
   ae_out_size_complex: int,
-  batch_len_rows: int
 ) -> tuple[Any, Any, Any]:
-  dataset = ds.dataset(parquet, format="parquet")
-  scanner = dataset.scanner(columns=cols_combined, batch_size=batch_len_rows)
 
   fields: list[Any] = [pa.field("row_id", pa.int64())]
   for col in cols_combined:
@@ -87,10 +84,14 @@ def _arrow_init(
       fields.append(pa.field(f"{col}__embed", pa.list_(pa.float32(), list_size=ae_out_size)))
     else:
       pass
-  
+
   schema = pa.schema(fields)
   writer = pq.ParquetWriter(parquet_embed, schema=schema, compression="zstd", use_dictionary=False)
-  return scanner, writer, schema
+  return writer, schema
+
+def _make_scanner(parquet: str, cols: list[str], batch_len_rows: int) -> Any:
+  dataset = ds.dataset(parquet, format="parquet")
+  return dataset.scanner(columns=cols, batch_size=batch_len_rows)
 
 @torch.inference_mode()
 def _batched_pooler_out(
@@ -119,16 +120,19 @@ def _batched_pooler_out(
   return torch.cat(embeddings, dim=0)
 
 def _embedding_matrix(
-  scanner: Any,
   model: Any,
   tokenizer: Any,
   col: str,
   max_len: int,
-  model_p: Path
+  model_p: Path,
+  parquet: str,
+  scanner_cols: list[str],
+  batch_len_rows: int
 ) -> torch.Tensor:
   cache_p: Path = model_p.parent / "POOLER_OUT.pkl"
   if not cache_p.exists():
     embdedded_columns: list[torch.Tensor] = []
+    scanner = _make_scanner(parquet, scanner_cols, batch_len_rows)
     for batch in scanner.to_batches():
       vals = batch.column(col).to_pylist()
       embeddings: torch.Tensor = _batched_pooler_out(vals, model, tokenizer, max_len)
@@ -143,14 +147,10 @@ def _write_embeddings(
   writer: Any,
   schema: Any,
   ae_idx: dict[str, tuple[Path, int, int]],
-  batch_len_rows
+  batch_len_rows: int
 ) -> None:
   try:
     mmaps = {c: (np.memmap(p, mode="r", dtype=np.float32, shape=(N, L)), L) for c, (p, N, L) in ae_idx.items()}
-
-    if not mmaps:
-      return None
-    
     n_rows_set: set[int] = {N for (_, N, _) in mmaps.values()}
     if len(n_rows_set) != 1:
       raise RuntimeError(f"PY-CODE:9 | Inconsistent row counts across columns... {n_rows_set}")
@@ -163,17 +163,20 @@ def _write_embeddings(
     idx: int = 0
     while idx < n_rows:
       end: int = min(idx + batch_len_rows, n_rows)
-      arrays: list[Any] = [pa.array(np.arange(idx, end, dtype=np.int64))]
 
+      arrays: list[Any] = []
       for field in schema:
 
         name: str = field.name
+        if name == "row_id":
+          arrays.append(pa.array(np.arange(idx, end, dtype=np.int64)))
+
         if name.endswith("__embed_complex"):
-          col: str = name[:-len("__embed_complex")]
+          col_key: str = name[:-len("__embed_complex")]
         else:
-          col = name[:-len("__embed")]
+          col_key = name[:-len("__embed")]
         
-        Z, _, L = mmaps[col]
+        Z, _, L = mmaps[col_key]
         arrays.append(_2D_list_array(np.asarray(Z[idx:end]), L))
 
       batch = pa.RecordBatch.from_arrays(arrays, schema=schema)
@@ -200,15 +203,13 @@ def _embed_texts(
   set_seed()
   dtype, device = dtype_device()
   cols_combined: list[str] = cols + cols_complex
-  scanner, writer, schema = _arrow_init(
-    parquet,
+  writer, schema = _arrow_init(
     parquet_embed,
     cols,
     cols_complex,
     cols_combined,
     ae_out_size,
     ae_out_size_complex,
-    batch_len_rows
   )
   ae = partial(
     encoder,
@@ -227,12 +228,14 @@ def _embed_texts(
       # * predefine dimensionality reduction
       dr = partial(ae, complex_embed=True) if is_complex else partial(ae)
       biobert_embedding = _embedding_matrix(
-        scanner,
         model,
         tokenizer,
         col,
         max_len,
-        model_p
+        model_p,
+        parquet,
+        cols_combined,
+        batch_len_rows
       )
       z: torch.Tensor = dr(
         pooler_out=biobert_embedding,
@@ -258,4 +261,7 @@ def embed_parquet(snapshot: dict[str, Any]) -> None:
   model, tokenizer = _biobert()
   parquet_embed: str = (parquet_p / "EMBEDDED.parquet").as_posix()
   _embed_texts(version, model, tokenizer, parquet, parquet_embed, cols, cols_complex)
+  pf = pq.ParquetFile(parquet_embed)
+  print("rows:", pf.metadata.num_rows, "cols:", pf.metadata.num_columns)
+  print(pf.schema_arrow)
   return None
