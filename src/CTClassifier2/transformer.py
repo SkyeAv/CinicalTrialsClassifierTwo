@@ -442,7 +442,7 @@ def _train_epoch(
     y_gold = sidecar_tensors["y_gold"][idx]
     y_pseudo= sidecar_tensors["y_pseudo"][idx]
     opt.zero_grad(set_to_none=True)
-    if device.type != "cuda":
+    if "cuda" not in device.type:
       batch = batch.to(device, dtype=dtype, non_blocking=True)
       lg, lp = model(batch)
       lg = _logit_adjust(lg, sidecar_tensors["prior_gold"], tau=tau_gold)
@@ -486,7 +486,7 @@ def _eval_epoch(
   for batch, idx in loader:
     y_gold = sidecar_tensors["y_gold"][idx]
     y_pseudo= sidecar_tensors["y_pseudo"][idx]
-    if device.type != "cuda":
+    if "cuda" not in device.type:
       batch = batch.to(device, dtype=dtype, non_blocking=True)
       lg, lp = model(batch)
       lg = _logit_adjust(lg, sidecar_tensors["prior_gold"], tau=tau_gold)

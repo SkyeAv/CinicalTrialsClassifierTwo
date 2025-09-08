@@ -78,7 +78,17 @@ def _arrow_init(
 ) -> tuple[Any, Any, Any]:
   dataset = ds.dataset(parquet, format="parquet")
   scanner = dataset.scanner(columns=cols_combined, batch_size=batch_len_rows)
-  schema = pa.schema([pa.field("row_id", pa.int64())] + [pa.field(f"{col}::embed", pa.list_(pa.float32(), list_size=ae_out_size)) if col in cols else pa.field(f"{col}::embed_complex", pa.list_(pa.float32(), list_size=ae_out_size_complex)) for col in cols_complex])
+
+  fields: list[Any] = [pa.field("row_id", pa.int64())]
+  for col in cols_combined:
+    if col in cols_complex:
+      fields.append(pa.field(f"{col}::embed_complex", pa.list_(pa.float32(), list_size=ae_out_size_complex)))
+    elif col in cols:
+      fields.append(pa.field(f"{col}__embed", pa.list_(pa.float32(), list_size=ae_out_size)))
+    else:
+      pass
+  
+  schema = pa.schema(fields)
   writer = pq.ParquetWriter(parquet_embed, schema=schema, compression="zstd", use_dictionary=False)
   return scanner, writer, schema
 
@@ -132,19 +142,42 @@ def _embedding_matrix(
 def _write_embeddings(
   writer: Any,
   schema: Any,
-  bert_out_size: int,
   ae_idx: dict[str, tuple[Path, int, int]],
   batch_len_rows
 ) -> None:
   try:
     mmaps = {c: (np.memmap(p, mode="r", dtype=np.float32, shape=(N, L)), L) for c, (p, N, L) in ae_idx.items()}
+
+    if not mmaps:
+      return None
+    
+    n_rows_set: set[int] = {N for (_, N, _) in mmaps.values()}
+    if len(n_rows_set) != 1:
+      raise RuntimeError(f"PY-CODE:9 | Inconsistent row counts across columns... {n_rows_set}")
+    
+    def _2D_list_array(arr: Any, size: int) -> Any:
+      flattened: Any = pa.array(arr.reshape(-1), type=pa.float32())
+      return pa.FixedSizeListArray.from_arrays(flattened, size)
+    
+    n_rows: int = n_rows_set.pop()
     idx: int = 0
-    while idx < bert_out_size:
-      end: int = min(idx + batch_len_rows, bert_out_size)
-      arrays = [pa.array(np.arange(idx, end, dtype=np.int64))]
-      for _, (Z, _) in mmaps.items():
-        arrays.append(np.asarray(Z[idx:end]))
-      writer.write_batch(pa.RecordBatch.from_arrays(arrays, schema=schema))
+    while idx < n_rows:
+      end: int = min(idx + batch_len_rows, n_rows)
+      arrays: list[Any] = [pa.array(np.arange(idx, end, dtype=np.int64))]
+
+      for field in schema:
+
+        name: str = field.name
+        if name.endswith("__embed_complex"):
+          col: str = name[:-len("__embed_complex")]
+        else:
+          col = name[:-len("__embed")]
+        
+        Z, _, L = mmaps[col]
+        arrays.append(_2D_list_array(np.asarray(Z[idx:end]), L))
+
+      batch = pa.RecordBatch.from_arrays(arrays, schema=schema)
+      writer.write_batch(batch)
       idx = end
   finally:
     writer.close()
@@ -212,7 +245,7 @@ def _embed_texts(
       mm_p.parent.mkdir(parents=True, exist_ok=True)
       np.memmap(mm_p, mode="w+", dtype=np.float32, shape=(n_rows, out_dim))[:] = z.numpy()
       ae_idx[col] = (mm_p, n_rows, out_dim)
-    _write_embeddings(writer, schema, bert_out_size, ae_idx, batch_len_rows)
+    _write_embeddings(writer, schema, ae_idx, batch_len_rows)
   finally:
     shutil.rmtree(mm_d, ignore_errors=True)
   return None

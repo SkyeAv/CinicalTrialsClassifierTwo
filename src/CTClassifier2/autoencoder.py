@@ -174,7 +174,7 @@ def _train_epoch(
 
   for (x,) in loader:
     opt.zero_grad(set_to_none=True)
-    if device.type != "cuda":
+    if "cuda" not in device.type:
       x = x.to(device, dtype=dtype, non_blocking=True)
       x_hat, _ = ae(x)
       loss: torch.Tensor = _ae_loss(x_hat, x)
@@ -207,7 +207,7 @@ def _eval_epoch(
   n: int = 0
 
   for (x,) in loader:
-    if device.type != "cuda":
+    if "cuda" not in device.type:
       x = x.to(device, dtype=dtype, non_blocking=True)
       x_hat, _ = ae(x)
       loss: torch.Tensor = _ae_loss(x_hat, x)
@@ -291,7 +291,7 @@ def _tranform_tensor(
 ) -> torch.Tensor:
   embed: list[torch.Tensor] = []
   for (x,) in loader:
-    if device.type != "cuda":
+    if "cuda" not in device.type:
       x = x.to(device, dtype=dtype)
       z = ae._encode(x)
     else:
