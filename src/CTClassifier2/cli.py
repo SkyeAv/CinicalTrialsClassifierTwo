@@ -33,7 +33,7 @@ def embed_snapshot(
 def train_labels(
   yaml: str = typer.Option(..., "-c", "--snapshot-config", help="Path to the snapshot config YAML")
 ) -> None:
-  """Trains a Trompt Transformer on a Pre-Intialized and Embedded Clinical Traials Snapshot with Labled Trials """
+  """Trains a Trompt Transformer on a Pre-Intialized and Embedded Clinical Traials Snapshot with Labled Trials"""
   parsed: Any = load_yaml(yaml)
   snapshot: dict[str, Any] = get_snapshot(parsed)
   return None
