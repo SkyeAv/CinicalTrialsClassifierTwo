@@ -33,8 +33,8 @@ Documenation for [CLI](./docs/cli.md)
 Documenation for [Configuration](./docs/snapshot.md)
 
 ## Contact
-[Skye Lane Goetz](skye.lane.goetz@gmail.com) - Institute for Systems Biology (ISB)
+[Skye Lane Goetz](mailto:skye.lane.goetz@gmail.com) - Institute for Systems Biology (ISB)
 
-[Gwênlyn Glusman](gglusman@isbscience.org) - Institute for Systems Biology (ISB)
+[Gwênlyn Glusman](mailto:gglusman@isbscience.org) - Institute for Systems Biology (ISB)
 
-[Jackie Lindstrom](jlindstr@isbscience.org) -  Institute for Systems Biology (ISB)
+[Jackie Lindstrom](mailto:jlindstr@isbscience.org) - Institute for Systems Biology (ISB)
