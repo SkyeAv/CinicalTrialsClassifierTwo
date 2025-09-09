@@ -4,7 +4,7 @@
 
 ### By Skye Goetz, Gwênlyn Glusman, and Jackie Lindstrom
 
-A Trompt-Derived Multiheaded Framework For Binomial Clinical Trial Classification Given an AACT Snapshot.
+A Trompt-Derived Multiheaded Transformer Framework For Binomial Clinical Trial Classification Given an AACT Snapshot.
 
 ## Usage (With Nix Direnv)
 
@@ -34,5 +34,7 @@ Documenation for [Configuration](./docs/snapshot.md)
 
 ## Contact
 [Skye Lane Goetz](skye.lane.goetz@gmail.com) - Institute for Systems Biology (ISB)
+
 [Gwênlyn Glusman](gglusman@isbscience.org) - Institute for Systems Biology (ISB)
+
 [Jackie Lindstrom](jlindstr@isbscience.org) -  Institute for Systems Biology (ISB)
