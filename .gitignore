@@ -1,0 +1,4 @@
+*__pycache__/
+*CTClassifier2.egg-info
+*.out
+*CACHE/
