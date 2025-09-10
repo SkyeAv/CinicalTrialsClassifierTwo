@@ -150,8 +150,8 @@ def _write_embeddings(
   batch_len_rows: int
 ) -> None:
   try:
-    mmaps = {c: (np.memmap(p, mode="r", dtype=np.float32, shape=(N, L)), L) for c, (p, N, L) in ae_idx.items()}
-    n_rows_set: set[int] = {N for (_, N, _) in mmaps.values()}
+    arrays_by_col = {c: (arr, N, L) for c, (arr, N, L) in ae_idx.items()}
+    n_rows_set = {N for (_, N, _) in arrays_by_col.values()}
     if len(n_rows_set) != 1:
       raise RuntimeError(f"PY-CODE:9 | Inconsistent row counts across columns... {n_rows_set}")
     
@@ -176,7 +176,7 @@ def _write_embeddings(
         else:
           col_key = name[:-len("__embed")]
         
-        Z, _, L = mmaps[col_key]
+        Z, _, L = arrays_by_col[col_key]
         arrays.append(_2D_list_array(np.asarray(Z[idx:end]), L))
 
       batch = pa.RecordBatch.from_arrays(arrays, schema=schema)
@@ -243,11 +243,8 @@ def _embed_texts(
         model_p=model_p
       )
       n_rows, out_dim = z.shape
-      # ! use memmaps so RAM doesn't explode
-      mm_p: Path = mm_d / str(version) / col / "ENCODED.mm"
-      mm_p.parent.mkdir(parents=True, exist_ok=True)
-      np.memmap(mm_p, mode="w+", dtype=np.float32, shape=(n_rows, out_dim))[:] = z.numpy()
-      ae_idx[col] = (mm_p, n_rows, out_dim)
+      z_np: Any = z.cpu().numpy()
+      ae_idx[col] = (z_np, n_rows, out_dim)
     _write_embeddings(writer, schema, ae_idx, batch_len_rows)
   finally:
     shutil.rmtree(mm_d, ignore_errors=True)
