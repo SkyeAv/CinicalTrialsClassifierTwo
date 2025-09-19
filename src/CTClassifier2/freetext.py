@@ -81,7 +81,7 @@ def _arrow_init(
     if col in cols_complex:
       fields.append(pa.field(f"{col}::embed_complex", pa.list_(pa.float32(), list_size=ae_out_size_complex)))
     elif col in cols:
-      fields.append(pa.field(f"{col}__embed", pa.list_(pa.float32(), list_size=ae_out_size)))
+      fields.append(pa.field(f"{col}::embed", pa.list_(pa.float32(), list_size=ae_out_size)))
     else:
       pass
 
@@ -172,10 +172,10 @@ def _write_embeddings(
           arrays.append(pa.array(np.arange(idx, end, dtype=np.int64)))
           continue
 
-        if name.endswith("__embed_complex"):
-          col_key: str = name[:-len("__embed_complex")]
+        if name.endswith("::embed_complex"):
+          col_key: str = name[:-len("::embed_complex")]
         else:
-          col_key = name[:-len("__embed")] if name != "row_id" else "row_id"
+          col_key = name[:-len("::embed")] if name != "row_id" else "row_id"
         
         Z, _, L = arrays_by_col[col_key]
         arrays.append(_2D_list_array(np.asarray(Z[idx:end]), L))
