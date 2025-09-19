@@ -170,11 +170,12 @@ def _write_embeddings(
         name: str = field.name
         if name == "row_id":
           arrays.append(pa.array(np.arange(idx, end, dtype=np.int64)))
+          continue
 
         if name.endswith("__embed_complex"):
           col_key: str = name[:-len("__embed_complex")]
         else:
-          col_key = name[:-len("__embed")]
+          col_key = name[:-len("__embed")] if name != "row_id" else "row_id"
         
         Z, _, L = arrays_by_col[col_key]
         arrays.append(_2D_list_array(np.asarray(Z[idx:end]), L))
