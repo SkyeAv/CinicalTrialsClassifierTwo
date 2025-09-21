@@ -32,7 +32,7 @@ _IGNORE: int = -100  # ! for CrossEntropyLoss(ignore_index=_IGNORE)
 
 def _load_features(parquet_p: Path) -> pd.DataFrame:
   parquet: str = (parquet_p / "RAW.parquet").as_posix()
-  parquet_embed: str = (parquet_p.parent / "EMBEDDED.parquet").as_posix()
+  parquet_embed: str = (parquet_p / "EMBEDDED.parquet").as_posix()
   describe_query: str = f"""\
 DESCRIBE SELECT * FROM parquet_scan("{parquet_embed}")
 """
