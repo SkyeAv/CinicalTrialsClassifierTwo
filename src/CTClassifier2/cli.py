@@ -37,7 +37,7 @@ def train_labels(
   """Trains a Trompt Transformer on a Pre-Intialized and Embedded Clinical Traials Snapshot with Labled Trials"""
   parsed: Any = load_yaml(yaml)
   snapshot: dict[str, Any] = get_snapshot(parsed)
-  fit_model()
+  fit_model(snapshot)
   return None
 
 def main() -> None:
