@@ -38,7 +38,7 @@ DESCRIBE SELECT * FROM parquet_scan("{parquet_embed}")
 """
   with duckdb.connect() as con:
     embed_cols: list[str] = con.execute(describe_query).fetchdf()["column_name"].tolist()
-    corresponding_raw_cols: list[str] = [re.sub(r"::embed(?:_complex)?$", "", col) for col in embed_cols]
+    corresponding_raw_cols: list[str] = [re.sub(r"::embed(?:_complex)?$", "", col) for col in embed_cols if "::embed" in col]
     exclude_clause: str = ", ".join([f'"{col}"' for col in corresponding_raw_cols])
     load_query: str = f"""\
 WITH base AS (
