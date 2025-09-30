@@ -55,7 +55,7 @@ def _split_lables(arr: Any, split_str: str = "[negative]") -> tuple[Any, Any]:
   # ! using any here because I hate what mypy does with np.ndarray
   parts: Any = np.char.partition(arr, "[negative]")
   untrust: Any = np.char.strip(parts[:, 0])
-  trust: Any  = np.char.strip(parts[:, 2])
+  trust: Any = np.char.strip(parts[:, 2])
   return trust, untrust
 
 def _load_text(txt_p: Path) -> Any:
@@ -78,12 +78,12 @@ def _label_frame(gold_p: Path, pseudo_p: Path) -> pd.DataFrame:
     })
   
   return pd.concat([
-    _make(gold_trust, 0, True),
-    _make(gold_untrust, 1, True),
-    _make(pseudo_trust, 0, False),
-    _make(pseudo_untrust, 1, False),
-  ],
-  ignore_index=True
+      _make(gold_trust, 0, True),
+      _make(gold_untrust, 1, True),
+      _make(pseudo_trust, 0, False),
+      _make(pseudo_untrust, 1, False),
+    ],
+    ignore_index=True
   )
 
 def _label_features(ff: pd.DataFrame, lf: pd.DataFrame) -> pd.DataFrame:
@@ -114,7 +114,7 @@ def _attach_split(
 
 def _get_stypes(df: pd.DataFrame) -> dict[str, Any]:
   infered = infer_df_stype(df)
-  return {col: stype.embedding if any(x in col for x in ["::embed", "::embed_complex"]) else _stype for col, _stype in infered}
+  return {col: stype.embedding if any(x in col for x in ["::embed", "::embed_complex"]) else _stype for col, _stype in infered.items()}
 
 def _load_dataset(df: pd.DataFrame) -> Any:
   aux_cols: list[str] = ["gold", "mask_gold", "mask_pseudo", "y_gold", "y_pseudo"]
@@ -155,7 +155,7 @@ def _train_priors(df: pd.DataFrame, dtype: Any, device: torch.device) -> dict[st
   
   return {
     "prior_gold": _priors(m_gold, dtype, device),
-    "prior_pseudo":_priors(m_pseu, dtype, device),
+    "prior_pseudo": _priors(m_pseu, dtype, device),
   }
 
 def _tf_loader(
@@ -440,7 +440,7 @@ def _train_epoch(
 
   for batch, idx in loader:
     y_gold = sidecar_tensors["y_gold"][idx]
-    y_pseudo= sidecar_tensors["y_pseudo"][idx]
+    y_pseudo = sidecar_tensors["y_pseudo"][idx]
     opt.zero_grad(set_to_none=True)
     if "cuda" not in device.type:
       batch = batch.to(device, dtype=dtype, non_blocking=True)
@@ -485,7 +485,7 @@ def _eval_epoch(
 
   for batch, idx in loader:
     y_gold = sidecar_tensors["y_gold"][idx]
-    y_pseudo= sidecar_tensors["y_pseudo"][idx]
+    y_pseudo = sidecar_tensors["y_pseudo"][idx]
     if "cuda" not in device.type:
       batch = batch.to(device, dtype=dtype, non_blocking=True)
       lg, lp = model(batch)
