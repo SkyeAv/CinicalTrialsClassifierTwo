@@ -104,7 +104,7 @@ def _batched_pooler_out(
   embeddings: list[torch.Tensor] = []
   device: torch.device = next(model.parameters()).device
   for idx in range(0, len(vals), batch_size):
-    batch: list[Optional[str]] = [x if x else "" for x in vals[idx:idx+batch_size]]
+    batch: list[Optional[str]] = [x if x else "" for x in vals[idx: idx + batch_size]]
     inputs = tokenizer(
       batch,
       return_tensors="pt",

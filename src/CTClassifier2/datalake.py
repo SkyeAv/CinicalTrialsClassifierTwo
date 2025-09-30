@@ -34,4 +34,3 @@ def generate_parquet(snapshot: dict[str, Any], nct_col: bool = False) -> None:
   else:
     pass
   return None
-

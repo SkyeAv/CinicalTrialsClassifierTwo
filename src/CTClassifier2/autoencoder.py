@@ -273,7 +273,6 @@ def _training_loop(
     if stopper._step(val_loss, ae):
       break
 
-
   if not model_p.exists():
     checkpoint: str = model_p.as_posix()
     raise FileNotFoundError(f"PY-CODE:6 | Autoencoder Checkpoint Not Found... {checkpoint}")

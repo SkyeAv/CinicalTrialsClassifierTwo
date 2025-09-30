@@ -18,5 +18,4 @@ def get_snapshot(parsed: Any) -> dict[str, Any]:
   try:
     return _SnapshotModel.model_validate(parsed).model_dump()
   except ValidationError as e:
-    err: str = str(e)
     raise ValidationError(f"PY-CODE:5 | Configuration Validation Error... {e}")

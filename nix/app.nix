@@ -25,7 +25,10 @@
     in
     {
       devShells.default = pkgs.mkShell {
-        packages = [ config.packages.app ];
+        packages = [
+          config.packages.app
+          py.flake8
+        ];
       };
       packages.app = py.buildPythonApplication {
         pname = "${moduleName}";
