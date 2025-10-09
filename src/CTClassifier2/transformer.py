@@ -187,8 +187,7 @@ def _tf_loader(
     ds,
     num_workers=num_workers,
     shuffle=shuffle,
-    batch_size=batch_size,
-    shuffle=shuffle
+    batch_size=batch_size
   )
   
   for idx, (batch, _) in enumerate(loader):
