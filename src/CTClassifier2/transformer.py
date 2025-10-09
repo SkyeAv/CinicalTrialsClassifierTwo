@@ -85,7 +85,7 @@ DESCRIBE SELECT * FROM parquet_scan(?)
     con.execute("INSERT INTO ncts SELECT * FROM UNNEST(?::VARCHAR[])", [labels])
     load_query: str = f"""\
 WITH base AS (
-  SELECT * EXCLUDE("{exclude_clause}")
+  SELECT * EXCLUDE({exclude_clause})
   FROM parquet_scan(?)
   WHERE nct IN (SELECT nct FROM ncts)
 ),
