@@ -76,13 +76,13 @@ def _load_features(parquet_p: Path, labels: list[str], max_threads: int = 32) ->
 DESCRIBE SELECT * FROM parquet_scan(?)
 """
   with duckdb.connect() as con:
-    con.execute(f"PRAGMA threads={max_threads}")
+    con.execute(f"PRAGMA threads=?", [max_threads])
     con.execute("PRAGMA enable_object_cache=true")
     embed_cols: list[str] = con.execute(describe_query, parquet_embed).fetchdf()["column_name"].tolist()
     corresponding_raw_cols: list[str] = [re.sub(r"::embed(?:_complex)?$", "", col) for col in embed_cols if "::embed" in col]
     exclude_clause: str = ", ".join([f'"{col}"' for col in corresponding_raw_cols])
     con.execute("CREATE TEMP TABLE ncts(nct VARCHAR)")
-    con.execute("INSERT INTO ncts SELECT * FROM UNNEST(?::VARCHAR[])", labels)
+    con.execute("INSERT INTO ncts SELECT * FROM UNNEST(?::VARCHAR[])", [labels])
     load_query: str = f"""\
 WITH base AS (
   SELECT * EXCLUDE(?)
@@ -101,7 +101,7 @@ SELECT a.*, b.* EXCLUDE("row_id")
 FROM base a
 LEFT JOIN trial_filter b USING ("row_id")
 """
-    return con.execute(load_query, exclude_clause, parquet, parquet_embed).fetchdf()
+    return con.execute(load_query, [exclude_clause, parquet, parquet_embed]).fetchdf()
 
 def _label_features(ff: pd.DataFrame, lf: pd.DataFrame) -> pd.DataFrame:
   return ff.merge(lf, on="nct", how="inner").drop(columns=["nct"])
@@ -189,7 +189,7 @@ def _tf_loader(
     shuffle=shuffle,
     batch_size=batch_size
   )
-  
+
   for idx, (batch, _) in enumerate(loader):
     start: int = idx * batch_size
     end: int = start + len(batch)
