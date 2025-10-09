@@ -30,30 +30,9 @@ import re
 
 _IGNORE: int = -100  # ! for CrossEntropyLoss(ignore_index=_IGNORE)
 
-def _load_features(parquet_p: Path) -> pd.DataFrame:
-  parquet: str = (parquet_p / "RAW.parquet").as_posix()
-  parquet_embed: str = (parquet_p / "EMBEDDED.parquet").as_posix()
-  describe_query: str = f"""\
-DESCRIBE SELECT * FROM parquet_scan("{parquet_embed}")
-"""
-  with duckdb.connect() as con:
-    embed_cols: list[str] = con.execute(describe_query).fetchdf()["column_name"].tolist()
-    corresponding_raw_cols: list[str] = [re.sub(r"::embed(?:_complex)?$", "", col) for col in embed_cols if "::embed" in col]
-    exclude_clause: str = ", ".join([f'"{col}"' for col in corresponding_raw_cols])
-    load_query: str = f"""\
-WITH base AS (
-  SELECT * EXCLUDE({exclude_clause})
-  FROM parquet_scan("{parquet}")
-)
-SELECT a.*, b.* EXCLUDE("row_id")
-FROM base a
-LEFT JOIN parquet_scan("{parquet_embed}") b USING ("row_id")
-"""
-    return con.execute(load_query).fetchdf()
-
 def _split_lables(arr: Any, split_str: str = "[negative]") -> tuple[Any, Any]:
   # ! using any here because I hate what mypy does with np.ndarray
-  parts: Any = np.char.partition(arr, "[negative]")
+  parts: Any = np.char.partition(arr, split_str)
   untrust: Any = np.char.strip(parts[:, 0])
   trust: Any = np.char.strip(parts[:, 2])
   return trust, untrust
@@ -62,12 +41,13 @@ def _load_text(txt_p: Path) -> Any:
   with txt_p.open("rt", encoding="utf-8") as f:
     return np.array([line.rstrip("\n") for line in f])
 
-def _label_frame(gold_p: Path, pseudo_p: Path) -> pd.DataFrame:
+def _label_frame(gold_p: Path, pseudo_p: Path) -> tuple[list[str], pd.DataFrame]:
   gold_arr: Any = _load_text(gold_p)
   pseudo_arr: Any = _load_text(pseudo_p)
 
   gold_trust, gold_untrust = _split_lables(gold_arr)
   pseudo_trust, pseudo_untrust = _split_lables(pseudo_arr)
+  labels: list[str] = np.concatenate((gold_trust, gold_untrust, pseudo_trust, pseudo_untrust)).tolist()
 
   def _make(arr: Any, label: int, is_gold: bool) -> pd.DataFrame: 
     # * helper fn I put here bc it would be weird out of scope... idk... it just felt off :skull:
@@ -77,14 +57,51 @@ def _label_frame(gold_p: Path, pseudo_p: Path) -> pd.DataFrame:
       "gold": is_gold
     })
   
-  return pd.concat([
+  return (
+    labels,
+    pd.concat([
       _make(gold_trust, 0, True),
       _make(gold_untrust, 1, True),
       _make(pseudo_trust, 0, False),
       _make(pseudo_untrust, 1, False),
     ],
     ignore_index=True
+    )
   )
+
+def _load_features(parquet_p: Path, labels: list[str], max_threads: int = 32) -> pd.DataFrame:
+  parquet: str = (parquet_p / "RAW.parquet").as_posix()
+  parquet_embed: str = (parquet_p / "EMBEDDED.parquet").as_posix()
+  describe_query: str = f"""\
+DESCRIBE SELECT * FROM parquet_scan(?)
+"""
+  with duckdb.connect() as con:
+    con.execute(f"PRAGMA threads={max_threads}")
+    con.execute("PRAGMA enable_object_cache=true")
+    embed_cols: list[str] = con.execute(describe_query, parquet_embed).fetchdf()["column_name"].tolist()
+    corresponding_raw_cols: list[str] = [re.sub(r"::embed(?:_complex)?$", "", col) for col in embed_cols if "::embed" in col]
+    exclude_clause: str = ", ".join([f'"{col}"' for col in corresponding_raw_cols])
+    con.execute("CREATE TEMP TABLE ncts(nct VARCHAR)")
+    con.execute("INSERT INTO ncts SELECT * FROM UNNEST(?::VARCHAR[])", labels)
+    load_query: str = f"""\
+WITH base AS (
+  SELECT * EXCLUDE(?)
+  FROM parquet_scan(?)
+  WHERE nct IN (SELECT nct FROM ncts)
+),
+keys AS (
+  SELECT DISTINCT row_id FROM base
+),
+trial_filter AS (
+  SELECT *
+  FROM parquet_scan(?)
+  WHERE row_id IN (SELECT row_id FROM keys)
+)
+SELECT a.*, b.* EXCLUDE("row_id")
+FROM base a
+LEFT JOIN trial_filter b USING ("row_id")
+"""
+    return con.execute(load_query, exclude_clause, parquet, parquet_embed).fetchdf()
 
 def _label_features(ff: pd.DataFrame, lf: pd.DataFrame) -> pd.DataFrame:
   return ff.merge(lf, on="nct", how="inner").drop(columns=["nct"])
@@ -147,7 +164,7 @@ def _train_priors(df: pd.DataFrame, dtype: Any, device: torch.device) -> dict[st
   m_gold: Any = m_train & df["mask_gold"].to_numpy()
   m_pseu: Any = m_train & df["mask_pseudo"].to_numpy()
 
-  def _priors(mask: np.ndarray) -> torch.Tensor:
+  def _priors(mask: np.ndarray, dtype: Any, device: torch.device) -> torch.Tensor:
     y: Any = df.loc[mask, "label"].to_numpy()
     counts = np.bincount(y, minlength=2).astype(np.float64)
     total = counts.sum().clip(min=1.0)
@@ -162,11 +179,14 @@ def _tf_loader(
   ds: Dataset,
   idxs: list[str],
   shuffle: bool = False,
-  batch_size: int = 64,
+  batch_size: int = 1024,
+  num_workers: int = 4,  # 4 workers per GPU
 ) -> Any:
   # * idx generator
   loader = DataLoader(
     ds,
+    num_workers=num_workers,
+    shuffle=shuffle,
     batch_size=batch_size,
     shuffle=shuffle
   )
@@ -556,8 +576,8 @@ def fit_model(snapshot: dict[str, Any]) -> None:
   dtype, device = dtype_device()
   version: int = snapshot["version"]
   parquet_p: Path = root() / "PARQUET" / str(version)
-  ff: pd.DataFrame = _load_features(parquet_p)
-  lf: pd.DataFrame = _label_frame(snapshot["gold_labels"], snapshot["pseudo_lables"])
+  lables, lf = _label_frame(snapshot["gold_labels"], snapshot["pseudo_lables"])
+  ff: pd.DataFrame = _load_features(parquet_p, lables)
   df: pd.DataFrame = _label_features(ff, lf)
   df = _add_masks_and_targets(df)
   df = _attach_split(df)
